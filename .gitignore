@@ -338,3 +338,7 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+.editorconfig
+ProgramsRunningClient/ProgramsRunningClient.dll.config
+ProgramsRunningServer/ProgramsRunningServer.dll.config
