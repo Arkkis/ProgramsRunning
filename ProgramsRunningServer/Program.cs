@@ -16,6 +16,7 @@ namespace ProgramsRunningServer
     internal class Program
     {
         public static bool keepAwake;
+        public static int lastPercent = 0;
 
         private static void Main()
         {
@@ -72,13 +73,21 @@ namespace ProgramsRunningServer
                 {
                     if (IsAnyOfProgramsRunning(cpuWakeProgramList))
                     {
-                        SetCpuResource(cpuMinimum: true, 5);
-                        SetCpuResource(cpuMinimum: false, 100);
+                        if (lastPercent != 100)
+                        {
+                            SetCpuResource(cpuMinimum: true, 5);
+                            SetCpuResource(cpuMinimum: false, 100);
+                        }
+                        lastPercent = 100;
                     }
                     else
                     {
-                        SetCpuResource(cpuMinimum: true, cpuLowMaxPercent < 5 ? cpuLowMaxPercent : 5);
-                        SetCpuResource(cpuMinimum: false, cpuLowMaxPercent);
+                        if (lastPercent != 100)
+                        {
+                            SetCpuResource(cpuMinimum: true, cpuLowMaxPercent < 5 ? cpuLowMaxPercent : 5);
+                            SetCpuResource(cpuMinimum: false, cpuLowMaxPercent);
+                        }
+                        lastPercent = cpuLowMaxPercent;
                     }
                 }
 
