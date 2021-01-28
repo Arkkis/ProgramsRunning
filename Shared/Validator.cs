@@ -9,6 +9,8 @@ namespace Shared
     {
         public static T Validate<T>(string setting)
         {
+            _ = setting ?? throw new ArgumentNullException(nameof(setting));
+
             var type = typeof(T);
 
             if (type == typeof(string))
@@ -57,6 +59,12 @@ namespace Shared
                 }
 
                 return (T)Convert.ChangeType(list.Where(program => program != "").ToList(), typeof(T));
+            }
+            else if (type == typeof(bool))
+            {
+                _ = bool.TryParse(setting, out var boolValue);
+
+                return (T)Convert.ChangeType(boolValue, typeof(T));
             }
 
             throw new NotImplementedException(typeof(T).ToString());

@@ -62,14 +62,31 @@ namespace ProgramsRunningServer
         public static void WakeOnLan(string clientMacAddress, IPAddress clientIpAddress)
         {
             var programList = Validator.Validate<List<string>>(ConfigurationManager.AppSettings["ProgramList"]);
+            var cpuWakeProgramList = Validator.Validate<List<string>>(ConfigurationManager.AppSettings["CpuWakeProgramList"]);
+            var useCpuControl = Validator.Validate<bool>(ConfigurationManager.AppSettings["UseCpuControl"]);
+            var cpuLowMaxPercent = Validator.Validate<int>(ConfigurationManager.AppSettings["CpuLowMaxPercent"]);
 
             while (true)
             {
+                if (useCpuControl)
+                {
+                    if (IsAnyOfProgramsRunning(cpuWakeProgramList))
+                    {
+                        SetCpuResource(cpuMinimum: true, 5);
+                        SetCpuResource(cpuMinimum: false, 100);
+                    }
+                    else
+                    {
+                        SetCpuResource(cpuMinimum: true, cpuLowMaxPercent < 5 ? cpuLowMaxPercent : 5);
+                        SetCpuResource(cpuMinimum: false, cpuLowMaxPercent);
+                    }
+                }
+
                 keepAwake = IsAnyOfProgramsRunning(programList);
 
                 if (!keepAwake)
                 {
-                    Thread.Sleep(20000);
+                    Thread.Sleep(5000);
                     continue;
                 }
 
@@ -104,7 +121,7 @@ namespace ProgramsRunningServer
                 sock.SendTo(payload, new IPEndPoint(clientIpAddress, 0));
                 sock.Close(5000);
 
-                Thread.Sleep(20000);
+                Thread.Sleep(5000);
             }
         }
 
@@ -121,6 +138,41 @@ namespace ProgramsRunningServer
             }
 
             return false;
+        }
+
+        private static void SetCpuResource(bool cpuMinimum, int percent)
+        {
+            if (percent > 100 || percent <= 0)
+            {
+                percent = 100;
+            }
+
+            var procthrottle = "PROCTHROTTLEMAX";
+
+            if (cpuMinimum)
+            {
+                procthrottle = "PROCTHROTTLEMIN";
+            }
+
+            var startInfo = new ProcessStartInfo
+            {
+                CreateNoWindow = true,
+                FileName = "cmd.exe",
+                Arguments = $"/C \"powercfg.exe -setacvalueindex SCHEME_CURRENT SUB_PROCESSOR {procthrottle} {percent}\""
+            };
+
+            var process = new Process { StartInfo = startInfo };
+            process.Start();
+
+             startInfo = new ProcessStartInfo
+            {
+                CreateNoWindow = true,
+                FileName = "cmd.exe",
+                Arguments = $"/C \"powercfg.exe /setactive SCHEME_CURRENT\""
+            };
+
+            process = new Process { StartInfo = startInfo };
+            process.Start();
         }
     }
 }
